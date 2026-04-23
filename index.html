@@ -48,8 +48,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .nav-tab.active{background:var(--gold);color:var(--ink);border-color:var(--gold);font-weight:500}
 .nav-tab.admin-only{display:none}
 .badge-admin{background:var(--gold);color:var(--ink);font-size:9px;padding:2px 7px;border-radius:10px;letter-spacing:1px;font-weight:500;margin-left:5px;text-transform:uppercase}
-.btn-logout{padding:6px 14px;background:transparent;border:1px solid rgba(201,169,110,0.2);border-radius:4px;color:var(--ink-subtle);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;letter-spacing:1px}
+.btn-logout,.btn-admin-access{padding:6px 14px;background:transparent;border:1px solid rgba(201,169,110,0.2);border-radius:4px;color:var(--ink-subtle);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;letter-spacing:1px}
 .btn-logout:hover{border-color:var(--danger);color:var(--danger)}
+.btn-admin-access:hover{border-color:var(--gold);color:var(--gold-light);background:rgba(201,169,110,0.08)}
+.btn-admin-access.admin-mode{border-color:rgba(139,58,58,0.45);color:var(--danger)}
+.btn-admin-access.admin-mode:hover{background:var(--danger-bg);border-color:var(--danger);color:var(--danger)}
 
 /* SYNC STATUS */
 .sync-bar{background:rgba(201,169,110,0.08);border-bottom:1px solid var(--border);padding:6px 28px;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink-subtle);display:none}
@@ -91,7 +94,7 @@ tbody tr:last-child{border-bottom:none}
 tbody tr:hover{background:var(--cream)}
 td{padding:11px 14px;font-size:13px;vertical-align:middle}
 .prod-cell{display:flex;align-items:center;gap:10px}
-.prod-thumb{width:44px;height:44px;border-radius:6px;object-fit:cover;border:1px solid var(--border);flex-shrink:0}
+.prod-thumb{width:44px;height:44px;border-radius:6px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;filter:brightness(1.03) contrast(1.04) saturate(1.06)}
 .prod-name{font-weight:500;font-size:13px;color:var(--ink)}
 .prod-desc{font-size:11px;color:var(--ink-subtle);margin-top:2px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:500}
@@ -119,10 +122,10 @@ td{padding:11px 14px;font-size:13px;vertical-align:middle}
 .catalog-brand{font-size:12px;color:var(--ink-subtle);letter-spacing:2px;text-transform:uppercase}
 .catalog-filter{display:flex;gap:8px;flex-wrap:wrap}
 .catalog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:18px}
-.catalog-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s}
-.catalog-card:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(201,169,110,0.15)}
-.catalog-img{width:100%;height:210px;object-fit:cover;display:block}
-.catalog-img-placeholder{width:100%;height:210px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:40px}
+.catalog-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s;border-color:rgba(201,169,110,0.32)}
+.catalog-card:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(201,169,110,0.18)}
+.catalog-img{width:100%;height:240px;object-fit:contain;display:block;background:#fff;padding:12px;filter:brightness(1.04) contrast(1.06) saturate(1.08);image-rendering:auto}
+.catalog-img-placeholder{width:100%;height:240px;background:linear-gradient(135deg,#fff,var(--cream));display:flex;align-items:center;justify-content:center;font-size:42px}
 .catalog-body{padding:14px 15px}
 .catalog-name{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:400;color:var(--ink);line-height:1.2;margin-bottom:3px}
 .catalog-talle{font-size:10px;color:var(--ink-subtle);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
@@ -229,7 +232,7 @@ td{padding:11px 14px;font-size:13px;vertical-align:middle}
     <div class="login-err" id="loginErr">Email o contraseña incorrectos</div>
     <button class="btn-login" onclick="doLogin()">Ingresar como Admin</button>
     <div class="login-divider"><span>o</span></div>
-    <button class="btn-client-enter" onclick="enterAsClient()">Ver catálogo como cliente</button>
+    <button class="btn-client-enter" onclick="enterAsClient()">Cerrar y volver al catálogo</button>
   </div>
 </div>
 
@@ -245,7 +248,7 @@ td{padding:11px 14px;font-size:13px;vertical-align:middle}
     </button>
     <button class="nav-tab" id="tabCatalogo" onclick="showSection('catalogo',this)">Catálogo</button>
     <button class="nav-tab admin-only" id="tabMarketing" onclick="showSection('marketing',this)">Marketing</button>
-    <button class="btn-logout" onclick="logout()">Salir</button>
+    <button class="btn-admin-access" id="adminAccessBtn" onclick="handleHeaderAction()">Admin</button>
   </div>
 </div>
 
@@ -552,7 +555,28 @@ async function doLogin() {
   isAdmin = true;
   enterApp(true);
 }
-function enterAsClient() { isAdmin = false; enterApp(false); }
+function enterAsClient() {
+  isAdmin = false;
+  document.getElementById('loginScreen').style.display = 'none';
+  if (document.getElementById('appContainer').style.display === 'block') {
+    activateSection('catalogo');
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tabCatalogo').classList.add('active');
+  } else {
+    enterApp(false);
+  }
+}
+
+function openAdminLogin() {
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginErr').style.display = 'none';
+  setTimeout(() => document.getElementById('loginEmail')?.focus(), 50);
+}
+
+function handleHeaderAction() {
+  if (isAdmin) logout();
+  else openAdminLogin();
+}
 
 async function enterApp(admin) {
   document.getElementById('loginScreen').style.display = 'none';
@@ -567,17 +591,23 @@ async function enterApp(admin) {
   document.getElementById('appHeader').style.display = 'flex';
   document.getElementById('appContainer').style.display = 'block';
 
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+
   if (admin) {
     document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-flex');
     document.getElementById('headerRole').textContent = 'Administrador';
-    document.getElementById('tabStock').classList.add('active');
-    activateSection('stock');
+    document.getElementById('adminAccessBtn').textContent = 'Salir';
+    document.getElementById('adminAccessBtn').classList.add('admin-mode');
   } else {
     document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-    document.getElementById('tabCatalogo').classList.add('active');
     document.getElementById('headerRole').textContent = 'Regalos que abren puertas y tocan corazones';
-    activateSection('catalogo');
+    document.getElementById('adminAccessBtn').textContent = 'Admin';
+    document.getElementById('adminAccessBtn').classList.remove('admin-mode');
   }
+
+  // La primera vista siempre es el catálogo, para que el cliente vea productos al entrar.
+  document.getElementById('tabCatalogo').classList.add('active');
+  activateSection('catalogo');
   renderAll();
 }
 
@@ -591,15 +621,12 @@ async function logout() {
     try { await supabaseClient.auth.signOut(); } catch (e) { console.error(e); }
   }
   isAdmin = false;
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('appHeader').style.display = 'none';
-  document.getElementById('appContainer').style.display = 'none';
-  document.getElementById('syncBar').classList.remove('visible');
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('loginScreen').style.display = 'none';
   const emailEl = document.getElementById('loginEmail');
   if (emailEl) emailEl.value = '';
   document.getElementById('loginPass').value = '';
   document.getElementById('loginErr').style.display = 'none';
+  enterApp(false);
 }
 
 function showSection(name, btn) {
@@ -761,7 +788,7 @@ function renderCatalog() {
     const venta = pricesMap[p.id] !== undefined ? Number(pricesMap[p.id]) : null;
     const oos   = qty === 0;
     const imgHtml = p.imgData
-      ? `<img class="catalog-img" src="${p.imgData}" alt="${p.nombre}" loading="lazy">`
+      ? `<img class="catalog-img" src="${p.imgData}" alt="${p.nombre}" loading="lazy" decoding="async">`
       : `<div class="catalog-img-placeholder">💎</div>`;
     html += `<div class="catalog-card${oos?' out-of-stock':''}">${imgHtml}
       <div class="catalog-body">
@@ -1032,15 +1059,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   setTimeout(async () => {
-    document.getElementById('loadingOverlay').style.display = 'none';
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) {
       isAdmin = true;
       enterApp(true);
     } else {
-      document.getElementById('loginScreen').style.display = 'flex';
+      isAdmin = false;
+      enterApp(false);
     }
-  }, 800);
+  }, 450);
 });
 </script>
 </body>
